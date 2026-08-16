@@ -3,7 +3,28 @@ import { useEffect } from 'react';
 import { useKeyboard } from '../hooks/useKeyboard';
 import { MobileControls } from './MobileControls';
 
-const blocks = ['grass', 'dirt', 'stone', 'wood', 'log', 'leaves', 'sand', 'glass'];
+import dirtImg from '../images/dirt.png';
+import grassTopImg from '../images/grass_top.png';
+import grassSideImg from '../images/grass_side.png';
+import stoneImg from '../images/stone.png';
+import woodImg from '../images/planks_oak.png';
+import logImg from '../images/log_oak.png';
+import leavesImg from '../images/leaves_oak.png';
+import sandImg from '../images/sand.png';
+import glassImg from '../images/glass.png';
+
+const blockImages = {
+  grass: grassSideImg,
+  dirt: dirtImg,
+  stone: stoneImg,
+  wood: woodImg,
+  log: logImg,
+  leaves: leavesImg,
+  sand: sandImg,
+  glass: glassImg
+};
+
+const blocks = Object.keys(blockImages);
 
 export const UI = () => {
   const activeTexture = useStore((state) => state.texture);
@@ -11,10 +32,9 @@ export const UI = () => {
   const actions = useKeyboard();
 
   useEffect(() => {
-    // Teclas 1 a 8
     const handleNumberKeys = (e) => {
       const num = parseInt(e.key);
-      if (num >= 1 && num <= 8) {
+      if (num >= 1 && num <= blocks.length) {
         setTexture(blocks[num - 1]);
       }
     };
@@ -34,50 +54,42 @@ export const UI = () => {
         transform: 'translateX(-50%)',
         display: 'flex',
         backgroundColor: 'rgba(50, 50, 50, 0.8)',
-        border: '3px solid #111',
-        padding: '5px',
+        border: '4px solid #333',
+        boxShadow: 'inset 0 0 0 2px #555',
+        padding: '4px',
         zIndex: 10
       }}>
         {blocks.map((block) => {
-          // Gerando preview visual
-          let bg = '#CCC';
-          if (block === 'grass') bg = '#4CAF50';
-          if (block === 'dirt') bg = '#795548';
-          if (block === 'stone') bg = '#808080';
-          if (block === 'wood') bg = '#C19A6B';
-          if (block === 'log') bg = '#5D4037';
-          if (block === 'leaves') bg = '#228B22';
-          if (block === 'sand') bg = '#C2B280';
-          if (block === 'glass') bg = '#ADD8E6';
-
           const isActive = activeTexture === block;
-
           return (
             <div
               key={block}
               onClick={() => setTexture(block)}
               style={{
-                width: '40px',
-                height: '40px',
-                backgroundColor: bg,
-                opacity: block === 'glass' ? 0.6 : 1,
-                border: isActive ? '3px solid white' : '3px solid #555',
+                width: '44px',
+                height: '44px',
+                backgroundColor: '#888',
+                backgroundImage: `url(${blockImages[block]})`,
+                backgroundSize: 'cover',
+                imageRendering: 'pixelated', // Essencial para visual retrô
+                opacity: block === 'glass' ? 0.7 : 1,
+                border: isActive ? '4px solid white' : '2px solid transparent',
+                boxShadow: isActive ? 'inset 0 0 0 2px #AAA' : 'inset -2px -2px 0 0 rgba(0,0,0,0.5)',
                 margin: '2px',
                 cursor: 'pointer',
-                boxShadow: isActive ? '0 0 10px white' : 'none'
               }}
             ></div>
           );
         })}
       </div>
 
-      <div style={{ position: 'absolute', top: 10, left: 10, color: 'white', backgroundColor: 'rgba(0,0,0,0.5)', padding: 10, borderRadius: 5, pointerEvents: 'none', zIndex: 10, fontFamily: 'monospace' }}>
-        <h3>Minecraft Classic (Reversa)</h3>
-        <p><b>W, A, S, D</b>: Andar</p>
-        <p><b>Espaço</b>: Pular</p>
-        <p><b>Mouse Esq</b>: Construir</p>
-        <p><b>Mouse Dir / Alt</b>: Quebrar</p>
-        <p><b>1-8</b>: Trocar bloco</p>
+      <div style={{ position: 'absolute', top: 10, left: 10, color: 'white', textShadow: '2px 2px 0 #3f3f3f', fontFamily: 'monospace', fontSize: '14px', zIndex: 10 }}>
+        <h2 style={{margin: '0 0 10px 0'}}>Minecraft Classic</h2>
+        <p style={{margin: '5px 0'}}><b>W, A, S, D</b>: Andar</p>
+        <p style={{margin: '5px 0'}}><b>Espaço</b>: Pular</p>
+        <p style={{margin: '5px 0'}}><b>Mouse Esq</b>: Construir</p>
+        <p style={{margin: '5px 0'}}><b>Mouse Dir</b>: Quebrar</p>
+        <p style={{margin: '5px 0'}}><b>1-8</b>: Trocar bloco</p>
       </div>
 
       <MobileControls />
