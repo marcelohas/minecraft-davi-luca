@@ -11,9 +11,9 @@ const JUMP_FORCE = 6;
 const _euler = new Euler(0, 0, 0, 'YXZ');
 const velocity = new Vector3();
 
-// Função auxiliar para verificar se um bloco existe numa coordenada arredondada
+const clean = (n) => (n === 0 ? 0 : n);
 const hasBlock = (x, y, z) => {
-  return worldMap.has(`${Math.round(x)}_${Math.round(y)}_${Math.round(z)}`);
+  return worldMap.has(`${clean(Math.round(x))}_${clean(Math.round(y))}_${clean(Math.round(z))}`);
 };
 
 export const Player = () => {
@@ -51,10 +51,20 @@ export const Player = () => {
     }
 
     const direction = new Vector3(moveX, 0, moveZ);
-    direction.normalize().multiplyScalar(SPEED * delta).applyEuler(camera.rotation);
-    direction.y = 0; 
+    if (direction.lengthSq() > 0.001) {
+      direction.normalize().multiplyScalar(SPEED * delta).applyEuler(camera.rotation);
+      direction.y = 0; 
+    } else {
+      direction.set(0, 0, 0);
+    }
     
     const pos = camera.position;
+    
+    // Fallback contra NaNs
+    if (isNaN(pos.x) || isNaN(pos.y) || isNaN(pos.z)) {
+      pos.set(0, 10, 0);
+      velocity.set(0, 0, 0);
+    }
     
     // --- COLISÃO X/Z (Paredes) ---
     // Checamos a altura dos pés (pos.y - 1.5) e do corpo (pos.y - 0.5)

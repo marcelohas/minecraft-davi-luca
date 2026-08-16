@@ -3,8 +3,9 @@ import { useFrame } from '@react-three/fiber';
 import { Vector3, Euler } from 'three';
 import { worldMap } from '../store';
 
+const clean = (n) => (n === 0 ? 0 : n);
 const hasBlock = (x, y, z) => {
-  return worldMap.has(`${Math.round(x)}_${Math.round(y)}_${Math.round(z)}`);
+  return worldMap.has(`${clean(Math.round(x))}_${clean(Math.round(y))}_${clean(Math.round(z))}`);
 };
 
 // Modelos simplificados
@@ -137,8 +138,10 @@ export const Animal = ({ type, position }) => {
       pos.y += velocityY.current * delta;
     }
     
-    if (pos.y < -20) {
-      pos.set(0, 10, 0); // Respawn se cair no abismo
+    
+    if (pos.y < -20 || isNaN(pos.x) || isNaN(pos.y) || isNaN(pos.z)) {
+      pos.set(0, 10, 0); // Respawn se cair no abismo ou der NaN
+      velocityY.current = 0;
     }
   });
 
