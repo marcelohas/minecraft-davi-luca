@@ -126,16 +126,19 @@ export const Animal = ({ type, position }) => {
     }
 
     // Gravidade
-    velocityY.current -= 15 * delta;
-    const nextY = pos.y + velocityY.current * delta;
+    const dt = Math.min(delta, 0.1);
+    velocityY.current -= 20 * dt;
+    const nextY = pos.y + velocityY.current * dt;
     
-    // Altura das pernas (porco e vaca têm barriga/pernas em 0.5)
-    // Se o chão (Y-1) existe, pousar no bloco.
-    if (hasBlock(pos.x, nextY - 0.5, pos.z)) {
+    const feetY = nextY - 0.5;
+    const blockY = Math.round(feetY - 0.5);
+    const isGrounded = hasBlock(pos.x, blockY, pos.z) && feetY <= blockY + 0.5;
+
+    if (isGrounded) {
       velocityY.current = 0;
-      pos.y = Math.ceil(nextY - 0.5) + 0.5;
+      pos.y = blockY + 0.5 + 0.5;
     } else {
-      pos.y += velocityY.current * delta;
+      pos.y += velocityY.current * dt;
     }
     
     
