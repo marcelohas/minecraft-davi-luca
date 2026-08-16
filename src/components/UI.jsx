@@ -1,8 +1,9 @@
 import { useStore } from '../store';
 import { useEffect } from 'react';
 import { useKeyboard } from '../hooks/useKeyboard';
+import { MobileControls } from './MobileControls';
 
-const blocks = ['dirt', 'grass', 'glass', 'wood', 'log'];
+const blocks = ['grass', 'dirt', 'stone', 'wood', 'log', 'leaves', 'sand', 'glass'];
 
 export const UI = () => {
   const activeTexture = useStore((state) => state.texture);
@@ -10,48 +11,76 @@ export const UI = () => {
   const actions = useKeyboard();
 
   useEffect(() => {
-    if (actions.dirt) setTexture('dirt');
-    if (actions.grass) setTexture('grass');
-    if (actions.glass) setTexture('glass');
-    if (actions.wood) setTexture('wood');
-    if (actions.log) setTexture('log');
-  }, [actions, setTexture]);
+    // Teclas 1 a 8
+    const handleNumberKeys = (e) => {
+      const num = parseInt(e.key);
+      if (num >= 1 && num <= 8) {
+        setTexture(blocks[num - 1]);
+      }
+    };
+    document.addEventListener('keydown', handleNumberKeys);
+    return () => document.removeEventListener('keydown', handleNumberKeys);
+  }, [setTexture]);
 
   return (
     <>
       <div className="crosshair"></div>
-      <div className="hotbar">
-        {blocks.map((block) => (
-          <div
-            key={block}
-            className={`hotbar-item ${activeTexture === block ? 'active' : ''}`}
-            onClick={() => setTexture(block)}
-          >
+      
+      {/* Container Hotbar Clássico */}
+      <div style={{
+        position: 'absolute',
+        bottom: 20,
+        left: '50%',
+        transform: 'translateX(-50%)',
+        display: 'flex',
+        backgroundColor: 'rgba(50, 50, 50, 0.8)',
+        border: '3px solid #111',
+        padding: '5px',
+        zIndex: 10
+      }}>
+        {blocks.map((block) => {
+          // Gerando preview visual
+          let bg = '#CCC';
+          if (block === 'grass') bg = '#4CAF50';
+          if (block === 'dirt') bg = '#795548';
+          if (block === 'stone') bg = '#808080';
+          if (block === 'wood') bg = '#C19A6B';
+          if (block === 'log') bg = '#5D4037';
+          if (block === 'leaves') bg = '#228B22';
+          if (block === 'sand') bg = '#C2B280';
+          if (block === 'glass') bg = '#ADD8E6';
+
+          const isActive = activeTexture === block;
+
+          return (
             <div
+              key={block}
+              onClick={() => setTexture(block)}
               style={{
-                width: '30px',
-                height: '30px',
-                backgroundColor: 
-                  block === 'grass' ? '#4CAF50' : 
-                  block === 'dirt' ? '#795548' : 
-                  block === 'wood' ? '#8D6E63' : 
-                  block === 'log' ? '#5D4037' : 
-                  '#ADD8E6',
+                width: '40px',
+                height: '40px',
+                backgroundColor: bg,
                 opacity: block === 'glass' ? 0.6 : 1,
-                border: '2px solid rgba(0,0,0,0.2)'
+                border: isActive ? '3px solid white' : '3px solid #555',
+                margin: '2px',
+                cursor: 'pointer',
+                boxShadow: isActive ? '0 0 10px white' : 'none'
               }}
             ></div>
-          </div>
-        ))}
+          );
+        })}
       </div>
-      <div style={{ position: 'absolute', top: 10, left: 10, color: 'white', backgroundColor: 'rgba(0,0,0,0.5)', padding: 10, borderRadius: 5, pointerEvents: 'none', zIndex: 10 }}>
-        <h3>Minecraft do Davi Lucca</h3>
-        <p><b>W, A, S, D</b> para andar</p>
-        <p><b>Espaço</b> para pular</p>
-        <p><b>Clique Esquerdo</b> para colocar bloco</p>
-        <p><b>Clique Direito</b> para quebrar</p>
-        <p><b>Números 1-5</b> para trocar bloco</p>
+
+      <div style={{ position: 'absolute', top: 10, left: 10, color: 'white', backgroundColor: 'rgba(0,0,0,0.5)', padding: 10, borderRadius: 5, pointerEvents: 'none', zIndex: 10, fontFamily: 'monospace' }}>
+        <h3>Minecraft Classic (Reversa)</h3>
+        <p><b>W, A, S, D</b>: Andar</p>
+        <p><b>Espaço</b>: Pular</p>
+        <p><b>Mouse Esq</b>: Construir</p>
+        <p><b>Mouse Dir / Alt</b>: Quebrar</p>
+        <p><b>1-8</b>: Trocar bloco</p>
       </div>
+
+      <MobileControls />
     </>
   );
 };
