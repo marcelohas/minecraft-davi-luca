@@ -59,8 +59,9 @@ export const Player = () => {
 
     const direction = new Vector3(moveX, 0, moveZ);
     if (direction.lengthSq() > 0.001) {
-      direction.normalize().multiplyScalar(SPEED * dt).applyEuler(camera.rotation);
-      direction.y = 0; 
+      // Usar apenas a rotação Y (Yaw) para que olhar para baixo/cima não diminua a velocidade
+      const yawEuler = new Euler(0, camera.rotation.y, 0, 'YXZ');
+      direction.normalize().multiplyScalar(SPEED * dt).applyEuler(yawEuler);
     } else {
       direction.set(0, 0, 0);
     }
