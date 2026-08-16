@@ -1,6 +1,11 @@
 import { useRef, useState, useEffect } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { Vector3, Euler } from 'three';
+import { worldMap } from '../store';
+
+const hasBlock = (x, y, z) => {
+  return worldMap.has(`${Math.round(x)}_${Math.round(y)}_${Math.round(z)}`);
+};
 
 // Modelos simplificados
 const PigModel = () => (
@@ -63,8 +68,8 @@ const CowModel = () => (
 
 export const Animal = ({ type, position }) => {
   const groupRef = useRef();
+  const velocityY = useRef(0);
   
-  // Estado da IA do animal
   const state = useRef({
     action: 'idle',
     targetRotation: Math.random() * Math.PI * 2,
@@ -78,37 +83,62 @@ export const Animal = ({ type, position }) => {
     state.current.timer -= delta;
     if (state.current.timer <= 0) {
       if (state.current.action === 'idle') {
-        // Decide andar
         state.current.action = 'walking';
         state.current.targetRotation = Math.random() * Math.PI * 2;
-        state.current.timer = 1 + Math.random() * 3; // anda por 1 a 4 segs
+        state.current.timer = 1 + Math.random() * 3;
       } else {
-        // Decide parar
         state.current.action = 'idle';
-        state.current.timer = 2 + Math.random() * 5; // para por 2 a 7 segs
+        state.current.timer = 2 + Math.random() * 5;
       }
     }
 
-    // Suaviza a rotação (interpolação)
     const currentRot = groupRef.current.rotation.y;
     const diff = state.current.targetRotation - currentRot;
     groupRef.current.rotation.y += diff * delta * 2;
 
-    // Movimento
+    const pos = groupRef.current.position;
+
+    // Movimento Horizontal
     if (state.current.action === 'walking') {
       const speed = type === 'pig' ? 1.0 : 0.8;
-      groupRef.current.translateZ(speed * delta);
       
-      // Limite simples do mundo (evitar que caiam para fora do 32x32)
-      if (groupRef.current.position.x > 14) groupRef.current.position.x = 14;
-      if (groupRef.current.position.x < -14) groupRef.current.position.x = -14;
-      if (groupRef.current.position.z > 14) groupRef.current.position.z = 14;
-      if (groupRef.current.position.z < -14) groupRef.current.position.z = -14;
+      // Vetor de direção baseado na rotação atual
+      const dir = new Vector3(0, 0, 1).applyEuler(new Euler(0, currentRot, 0));
+      const nx = pos.x + dir.x * speed * delta;
+      const nz = pos.z + dir.z * speed * delta;
       
-      // TODO: Gravidade e colisão com terreno real
-      // Para simular, vamos mantê-lo sempre em Y=1 (plano base) ou ler do store.
-      // Como o terreno tem colinas, num jogo real faríamos um Raycast. 
-      // Por simplicidade, fixaremos a altura inicial.
+      // Checar parede na frente
+      if (!hasBlock(nx, pos.y, nz) && !hasBlock(nx, pos.y + 1, nz)) {
+         pos.x = nx;
+         pos.z = nz;
+      } else {
+         // Se bater num bloco, vira para outro lado imediatamente
+         state.current.action = 'idle';
+         state.current.timer = 1;
+         state.current.targetRotation = currentRot + Math.PI;
+      }
+      
+      // Limite do mundo
+      if (pos.x > 14 || pos.x < -14 || pos.z > 14 || pos.z < -14) {
+         state.current.targetRotation += Math.PI; // Volta pro centro
+      }
+    }
+
+    // Gravidade
+    velocityY.current -= 15 * delta;
+    const nextY = pos.y + velocityY.current * delta;
+    
+    // Altura das pernas (porco e vaca têm barriga/pernas em 0.5)
+    // Se o chão (Y-1) existe, pousar no bloco.
+    if (hasBlock(pos.x, nextY - 0.5, pos.z)) {
+      velocityY.current = 0;
+      pos.y = Math.ceil(nextY - 0.5) + 0.5;
+    } else {
+      pos.y += velocityY.current * delta;
+    }
+    
+    if (pos.y < -20) {
+      pos.set(0, 10, 0); // Respawn se cair no abismo
     }
   });
 

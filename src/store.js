@@ -4,6 +4,9 @@ import { createNoise2D } from 'simplex-noise';
 const nanoid = () => Math.random().toString(36).substring(2, 9);
 const noise2D = createNoise2D();
 
+// Mapa global para acesso ultra-rápido à colisão
+export const worldMap = new Set();
+
 // Função para gerar mundo com colinas
 function generateWorld(size = 32) {
   const cubes = [];
@@ -28,9 +31,12 @@ function generateWorld(size = 32) {
           texture = 'dirt';
         }
 
+        const blockPos = [worldX, y, worldZ];
+        worldMap.add(`${worldX}_${y}_${worldZ}`);
+
         cubes.push({
           key: nanoid(),
-          pos: [worldX, y, worldZ],
+          pos: blockPos,
           texture
         });
       }
@@ -39,9 +45,11 @@ function generateWorld(size = 32) {
       if (height >= -1 && Math.random() < 0.01) {
         // Tronco
         for (let i = 1; i <= 4; i++) {
+          const ly = height + i;
+          worldMap.add(`${worldX}_${ly}_${worldZ}`);
           cubes.push({
             key: nanoid(),
-            pos: [worldX, height + i, worldZ],
+            pos: [worldX, ly, worldZ],
             texture: 'log'
           });
         }
@@ -52,9 +60,14 @@ function generateWorld(size = 32) {
               // Deixar os cantos vazios para formato arredondado
               if (Math.abs(lx) === 2 && Math.abs(lz) === 2 && Math.abs(ly) === 5) continue;
               
+              const hlx = worldX + lx;
+              const hly = height + ly;
+              const hlz = worldZ + lz;
+              worldMap.add(`${hlx}_${hly}_${hlz}`);
+
               cubes.push({
                 key: nanoid(),
-                pos: [worldX + lx, height + ly, worldZ + lz],
+                pos: [hlx, hly, hlz],
                 texture: 'leaves'
               });
             }
@@ -82,23 +95,29 @@ export const useStore = create((set) => ({
   animals: initialWorld.animals,
   texture: 'wood',
 
-  addCube: (x, y, z, texture) => set((state) => ({
-    cubes: [
-      ...state.cubes,
-      {
-        key: nanoid(),
-        pos: [x, y, z],
-        texture
-      }
-    ]
-  })),
+  addCube: (x, y, z, texture) => {
+    worldMap.add(`${x}_${y}_${z}`);
+    set((state) => ({
+      cubes: [
+        ...state.cubes,
+        {
+          key: nanoid(),
+          pos: [x, y, z],
+          texture
+        }
+      ]
+    }));
+  },
 
-  removeCube: (x, y, z) => set((state) => ({
-    cubes: state.cubes.filter(cube => {
-      const [X, Y, Z] = cube.pos;
-      return X !== x || Y !== y || Z !== z;
-    })
-  })),
+  removeCube: (x, y, z) => {
+    worldMap.delete(`${x}_${y}_${z}`);
+    set((state) => ({
+      cubes: state.cubes.filter(cube => {
+        const [X, Y, Z] = cube.pos;
+        return X !== x || Y !== y || Z !== z;
+      })
+    }));
+  },
 
   setTexture: (texture) => set(() => ({
     texture
