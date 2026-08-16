@@ -23,6 +23,7 @@ function generateWorld(size = 32) {
       const height = Math.floor(noise2D(worldX / 20, worldZ / 20) * 4);
       
       // Criar de baixo até a altura
+      let topTexture = 'stone';
       for (let y = -4; y <= height; y++) {
         let texture = 'stone';
         if (y === height) {
@@ -39,6 +40,8 @@ function generateWorld(size = 32) {
           pos: blockPos,
           texture
         });
+        
+        if (y === height) topTexture = texture;
       }
 
       // Árvores aleatórias (1% de chance)
@@ -76,7 +79,7 @@ function generateWorld(size = 32) {
       }
 
       // Animais aleatórios na grama (2% chance)
-      if (texture === 'grass' && Math.random() < 0.02) {
+      if (topTexture === 'grass' && Math.random() < 0.02) {
         animals.push({
           id: nanoid(),
           type: Math.random() > 0.5 ? 'pig' : 'cow',
