@@ -7,6 +7,7 @@ const noise2D = createNoise2D();
 // Função para gerar mundo com colinas
 function generateWorld(size = 32) {
   const cubes = [];
+  const animals = [];
   const startX = -size / 2;
   const startZ = -size / 2;
 
@@ -60,13 +61,25 @@ function generateWorld(size = 32) {
           }
         }
       }
+
+      // Animais aleatórios na grama (2% chance)
+      if (texture === 'grass' && Math.random() < 0.02) {
+        animals.push({
+          id: nanoid(),
+          type: Math.random() > 0.5 ? 'pig' : 'cow',
+          pos: [worldX, height + 1, worldZ]
+        });
+      }
     }
   }
-  return cubes;
+  return { cubes, animals };
 }
 
+const initialWorld = generateWorld(32);
+
 export const useStore = create((set) => ({
-  cubes: generateWorld(32),
+  cubes: initialWorld.cubes,
+  animals: initialWorld.animals,
   texture: 'wood',
 
   addCube: (x, y, z, texture) => set((state) => ({

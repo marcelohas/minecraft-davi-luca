@@ -2,11 +2,13 @@ import { useRef, useMemo, useEffect, useState } from 'react';
 import { useStore } from '../store';
 import { Object3D, BoxGeometry } from 'three';
 import { textures } from '../images/textures';
+import { Animal } from './Animal';
 
 const o = new Object3D();
 
 export const World = () => {
   const cubes = useStore((state) => state.cubes);
+  const animals = useStore((state) => state.animals);
   const activeTexture = useStore((state) => state.texture);
   const addCube = useStore((state) => state.addCube);
   const removeCube = useStore((state) => state.removeCube);
@@ -79,6 +81,11 @@ export const World = () => {
           <lineBasicMaterial attach="material" color="black" />
         </lineSegments>
       )}
+
+      {/* Animais */}
+      {animals && animals.map((animal) => (
+        <Animal key={animal.id} type={animal.type} position={animal.pos} />
+      ))}
     </group>
   );
 };
