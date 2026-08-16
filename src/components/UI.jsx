@@ -5,7 +5,8 @@ import { useKeyboard } from '../hooks/useKeyboard';
 const blocks = ['dirt', 'grass', 'glass', 'wood', 'log'];
 
 export const UI = () => {
-  const [activeTexture, setTexture] = useStore((state) => [state.texture, state.setTexture]);
+  const activeTexture = useStore((state) => state.texture);
+  const setTexture = useStore((state) => state.setTexture);
   const actions = useKeyboard();
 
   useEffect(() => {

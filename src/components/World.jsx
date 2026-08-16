@@ -2,7 +2,7 @@ import { useStore } from '../store';
 import { Cube } from './Cube';
 
 export const World = () => {
-  const [cubes] = useStore((state) => [state.cubes]);
+  const cubes = useStore((state) => state.cubes);
 
   return (
     <>

@@ -1,4 +1,4 @@
-import { useBox } from '@react-three/cannon'; // Não usaremos cannon agora para simplificar
+
 import { useState } from 'react';
 import { useStore } from '../store';
 
@@ -12,11 +12,9 @@ const colors = {
 
 export const Cube = ({ position, texture, isFloor = false }) => {
   const [isHovered, setIsHovered] = useState(false);
-  const [addCube, removeCube, activeTexture] = useStore((state) => [
-    state.addCube,
-    state.removeCube,
-    state.texture
-  ]);
+  const addCube = useStore((state) => state.addCube);
+  const removeCube = useStore((state) => state.removeCube);
+  const activeTexture = useStore((state) => state.texture);
 
   return (
     <mesh
