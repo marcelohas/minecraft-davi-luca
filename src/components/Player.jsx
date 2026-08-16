@@ -3,7 +3,7 @@ import { PointerLockControls } from '@react-three/drei';
 import { useRef, useEffect } from 'react';
 import { Vector3, Euler } from 'three';
 import { useKeyboard } from '../hooks/useKeyboard';
-import { worldMap } from '../store';
+import { useStore, worldMap } from '../store';
 import { sounds } from '../utils/sounds';
 
 const SPEED = 5;
@@ -22,6 +22,7 @@ export const Player = () => {
   const { camera } = useThree();
   const actions = useKeyboard();
   const controlsRef = useRef();
+  const requestChunks = useStore((state) => state.requestChunks);
   
   // Timer para os passos
   const stepTimer = useRef(0);
@@ -90,6 +91,9 @@ export const Player = () => {
     if (!checkWall(pos.x, pos.y, nextZ + Math.sign(direction.z) * radius)) {
       pos.z = nextZ;
     }
+    
+    // Gerar chunks do mundo infinito
+    requestChunks(pos.x, pos.z);
 
     // Gravidade
     velocity.y -= GRAVITY * dt;

@@ -1,36 +1,30 @@
-import { useRef, useMemo, useEffect, useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useStore } from '../store';
 import { sounds } from '../utils/sounds';
-import { Object3D, BoxGeometry } from 'three';
-import { textures } from '../images/textures';
+import { BoxGeometry } from 'three';
 import { Animal } from './Animal';
-
-const o = new Object3D();
+import { Chunk } from './Chunk';
 
 export const World = () => {
-  const cubes = useStore((state) => state.cubes);
-  const animals = useStore((state) => state.animals);
+  const chunks = useStore((state) => state.chunks);
   const activeTexture = useStore((state) => state.texture);
   const addCube = useStore((state) => state.addCube);
   const removeCube = useStore((state) => state.removeCube);
 
   const [hoveredPos, setHoveredPos] = useState(null);
 
-  const blocksByTexture = useMemo(() => {
-    const map = {};
-    cubes.forEach(cube => {
-      if (!map[cube.texture]) map[cube.texture] = [];
-      map[cube.texture].push(cube);
-    });
-    return map;
-  }, [cubes]);
+  useEffect(() => {
+    const handleInit = () => sounds.init();
+    window.addEventListener('click', handleInit, { once: true });
+    window.addEventListener('touchstart', handleInit, { once: true });
+  }, []);
 
-  const handlePointerDown = (e, textureName) => {
+  const handlePointerDown = (e, textureName, blockList) => {
     e.stopPropagation();
     const { instanceId } = e;
     if (instanceId === undefined) return;
     
-    const block = blocksByTexture[textureName][instanceId];
+    const block = blockList[instanceId];
     if (!block) return;
     
     const clickedFace = Math.floor(e.faceIndex / 2);
@@ -53,11 +47,11 @@ export const World = () => {
     sounds.place();
   };
 
-  const handlePointerMove = (e, textureName) => {
+  const handlePointerMove = (e, textureName, blockList) => {
     e.stopPropagation();
     const { instanceId } = e;
     if (instanceId === undefined) return;
-    const block = blocksByTexture[textureName][instanceId];
+    const block = blockList[instanceId];
     if (block) setHoveredPos(block.pos);
   };
 
@@ -67,14 +61,17 @@ export const World = () => {
 
   return (
     <group onPointerOut={handlePointerOut}>
-      {Object.entries(blocksByTexture).map(([textureName, blocks]) => (
-        <InstancedCubes 
-          key={textureName}
-          textureName={textureName}
-          blocks={blocks}
-          onClick={(e) => handlePointerDown(e, textureName)}
-          onMove={(e) => handlePointerMove(e, textureName)}
-        />
+      {Object.entries(chunks).map(([chunkKey, chunkData]) => (
+        <group key={chunkKey}>
+          <Chunk 
+            blocks={chunkData.blocks} 
+            onClick={handlePointerDown}
+            onMove={handlePointerMove}
+          />
+          {chunkData.animals.map((animal) => (
+            <Animal key={animal.id} type={animal.type} position={animal.pos} />
+          ))}
+        </group>
       ))}
       
       {/* Contorno Preto do Bloco Selecionado */}
@@ -84,49 +81,6 @@ export const World = () => {
           <lineBasicMaterial attach="material" color="black" />
         </lineSegments>
       )}
-
-      {/* Animais */}
-      {animals && animals.map((animal) => (
-        <Animal key={animal.id} type={animal.type} position={animal.pos} />
-      ))}
     </group>
-  );
-};
-
-const InstancedCubes = ({ textureName, blocks, onClick, onMove }) => {
-  const meshRef = useRef();
-
-  useEffect(() => {
-    // Inicializar áudio no primeiro clique/toque
-    const handleInit = () => sounds.init();
-    window.addEventListener('click', handleInit, { once: true });
-    window.addEventListener('touchstart', handleInit, { once: true });
-
-    if (meshRef.current) {
-      blocks.forEach((block, i) => {
-        o.position.set(...block.pos);
-        o.updateMatrix();
-        meshRef.current.setMatrixAt(i, o.matrix);
-      });
-      meshRef.current.instanceMatrix.needsUpdate = true;
-    }
-  }, [blocks]);
-
-  return (
-    <instancedMesh
-      ref={meshRef}
-      args={[null, null, blocks.length]}
-      onPointerDown={onClick}
-      onPointerMove={onMove}
-    >
-      <boxGeometry attach="geometry" />
-      {Array.isArray(textures[textureName]) ? (
-        textures[textureName].map((tex, i) => (
-          <meshStandardMaterial key={i} attach={`material-${i}`} map={tex} />
-        ))
-      ) : (
-        <meshStandardMaterial attach="material" map={textures[textureName]} transparent={textureName === 'glass'} opacity={textureName === 'glass' ? 0.6 : 1} />
-      )}
-    </instancedMesh>
   );
 };

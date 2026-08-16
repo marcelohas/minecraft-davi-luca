@@ -4,25 +4,24 @@ import { createNoise2D } from 'simplex-noise';
 const nanoid = () => Math.random().toString(36).substring(2, 9);
 const noise2D = createNoise2D();
 
-// Mapa global para acesso ultra-rápido à colisão
 export const worldMap = new Set();
+const CHUNK_SIZE = 16;
+const RENDER_DISTANCE = 2; // Raio (2 = 5x5 chunks = 25 chunks)
 
-// Função para gerar mundo com colinas
-function generateWorld(size = 32) {
-  const cubes = [];
+// Função para gerar um chunk de 16x16
+function generateChunk(cx, cz) {
+  const blocks = [];
   const animals = [];
-  const startX = -size / 2;
-  const startZ = -size / 2;
+  const startX = cx * CHUNK_SIZE;
+  const startZ = cz * CHUNK_SIZE;
 
-  for (let x = 0; x < size; x++) {
-    for (let z = 0; z < size; z++) {
+  for (let x = 0; x < CHUNK_SIZE; x++) {
+    for (let z = 0; z < CHUNK_SIZE; z++) {
       const worldX = startX + x;
       const worldZ = startZ + z;
       
-      // Ruído para altura (frequência baixa para colinas suaves)
       const height = Math.floor(noise2D(worldX / 20, worldZ / 20) * 4);
       
-      // Criar de baixo até a altura
       let topTexture = 'stone';
       for (let y = -4; y <= height; y++) {
         let texture = 'stone';
@@ -35,7 +34,7 @@ function generateWorld(size = 32) {
         const blockPos = [worldX, y, worldZ];
         worldMap.add(`${worldX}_${y}_${worldZ}`);
 
-        cubes.push({
+        blocks.push({
           key: nanoid(),
           pos: blockPos,
           texture
@@ -44,42 +43,29 @@ function generateWorld(size = 32) {
         if (y === height) topTexture = texture;
       }
 
-      // Árvores aleatórias (1% de chance)
+      // Árvores
       if (height >= -1 && Math.random() < 0.01) {
-        // Tronco
         for (let i = 1; i <= 4; i++) {
           const ly = height + i;
           worldMap.add(`${worldX}_${ly}_${worldZ}`);
-          cubes.push({
-            key: nanoid(),
-            pos: [worldX, ly, worldZ],
-            texture: 'log'
-          });
+          blocks.push({ key: nanoid(), pos: [worldX, ly, worldZ], texture: 'log' });
         }
-        // Folhas
         for (let lx = -2; lx <= 2; lx++) {
           for (let lz = -2; lz <= 2; lz++) {
             for (let ly = 3; ly <= 5; ly++) {
-              // Deixar os cantos vazios para formato arredondado
               if (Math.abs(lx) === 2 && Math.abs(lz) === 2 && Math.abs(ly) === 5) continue;
-              
               const hlx = worldX + lx;
               const hly = height + ly;
               const hlz = worldZ + lz;
               worldMap.add(`${hlx}_${hly}_${hlz}`);
-
-              cubes.push({
-                key: nanoid(),
-                pos: [hlx, hly, hlz],
-                texture: 'leaves'
-              });
+              blocks.push({ key: nanoid(), pos: [hlx, hly, hlz], texture: 'leaves' });
             }
           }
         }
       }
 
-      // Animais aleatórios na grama (2% chance)
-      if (topTexture === 'grass' && Math.random() < 0.02) {
+      // Animais
+      if (topTexture === 'grass' && Math.random() < 0.01) {
         animals.push({
           id: nanoid(),
           type: Math.random() > 0.5 ? 'pig' : 'cow',
@@ -88,41 +74,88 @@ function generateWorld(size = 32) {
       }
     }
   }
-  return { cubes, animals };
+  return { blocks, animals };
 }
 
-const initialWorld = generateWorld(32);
-
-export const useStore = create((set) => ({
-  cubes: initialWorld.cubes,
-  animals: initialWorld.animals,
+export const useStore = create((set, get) => ({
+  chunks: {},
   texture: 'wood',
+  playerChunk: null,
+
+  requestChunks: (px, pz) => {
+    const cx = Math.floor(px / CHUNK_SIZE);
+    const cz = Math.floor(pz / CHUNK_SIZE);
+    
+    // Evita gerar se o player ainda está no mesmo chunk
+    if (get().playerChunk === `${cx}_${cz}`) return;
+
+    set((state) => {
+      const newChunks = { ...state.chunks };
+      let updated = false;
+
+      // Gerar chunks ao redor
+      for (let x = cx - RENDER_DISTANCE; x <= cx + RENDER_DISTANCE; x++) {
+        for (let z = cz - RENDER_DISTANCE; z <= cz + RENDER_DISTANCE; z++) {
+          const chunkKey = `${x}_${z}`;
+          if (!newChunks[chunkKey]) {
+            newChunks[chunkKey] = generateChunk(x, z);
+            updated = true;
+          }
+        }
+      }
+
+      if (updated) {
+        return { chunks: newChunks, playerChunk: `${cx}_${cz}` };
+      }
+      return { playerChunk: `${cx}_${cz}` };
+    });
+  },
 
   addCube: (x, y, z, texture) => {
+    const cx = Math.floor(x / CHUNK_SIZE);
+    const cz = Math.floor(z / CHUNK_SIZE);
+    const chunkKey = `${cx}_${cz}`;
+
     worldMap.add(`${x}_${y}_${z}`);
-    set((state) => ({
-      cubes: [
-        ...state.cubes,
-        {
-          key: nanoid(),
-          pos: [x, y, z],
-          texture
+    
+    set((state) => {
+      const chunk = state.chunks[chunkKey];
+      if (!chunk) return state;
+
+      return {
+        chunks: {
+          ...state.chunks,
+          [chunkKey]: {
+            ...chunk,
+            blocks: [...chunk.blocks, { key: nanoid(), pos: [x, y, z], texture }]
+          }
         }
-      ]
-    }));
+      };
+    });
   },
 
   removeCube: (x, y, z) => {
+    const cx = Math.floor(x / CHUNK_SIZE);
+    const cz = Math.floor(z / CHUNK_SIZE);
+    const chunkKey = `${cx}_${cz}`;
+
     worldMap.delete(`${x}_${y}_${z}`);
-    set((state) => ({
-      cubes: state.cubes.filter(cube => {
-        const [X, Y, Z] = cube.pos;
-        return X !== x || Y !== y || Z !== z;
-      })
-    }));
+
+    set((state) => {
+      const chunk = state.chunks[chunkKey];
+      if (!chunk) return state;
+
+      return {
+        chunks: {
+          ...state.chunks,
+          [chunkKey]: {
+            ...chunk,
+            blocks: chunk.blocks.filter(b => b.pos[0] !== x || b.pos[1] !== y || b.pos[2] !== z)
+          }
+        }
+      };
+    });
   },
 
-  setTexture: (texture) => set(() => ({
-    texture
-  }))
+  setTexture: (texture) => set(() => ({ texture }))
 }));
