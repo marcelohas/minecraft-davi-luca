@@ -2,6 +2,7 @@ import { useStore } from '../store';
 import { useEffect } from 'react';
 import { useKeyboard } from '../hooks/useKeyboard';
 import { MobileControls } from './MobileControls';
+import { Inventory } from './Inventory';
 
 import dirtImg from '../images/dirt.png';
 import grassTopImg from '../images/grass_top.png';
@@ -29,18 +30,22 @@ const blocks = Object.keys(blockImages);
 export const UI = () => {
   const activeTexture = useStore((state) => state.texture);
   const setTexture = useStore((state) => state.setTexture);
+  const toggleInventory = useStore((state) => state.toggleInventory);
   const actions = useKeyboard();
 
   useEffect(() => {
-    const handleNumberKeys = (e) => {
+    const handleKeyDown = (e) => {
       const num = parseInt(e.key);
       if (num >= 1 && num <= blocks.length) {
         setTexture(blocks[num - 1]);
       }
+      if (e.key.toLowerCase() === 'e') {
+        toggleInventory();
+      }
     };
-    document.addEventListener('keydown', handleNumberKeys);
-    return () => document.removeEventListener('keydown', handleNumberKeys);
-  }, [setTexture]);
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [setTexture, toggleInventory]);
 
   return (
     <>
@@ -90,9 +95,11 @@ export const UI = () => {
         <p style={{margin: '5px 0'}}><b>Mouse Esq</b>: Construir</p>
         <p style={{margin: '5px 0'}}><b>Mouse Dir</b>: Quebrar</p>
         <p style={{margin: '5px 0'}}><b>1-8</b>: Trocar bloco</p>
+        <p style={{margin: '5px 0'}}><b>E</b>: Inventário</p>
       </div>
 
       <MobileControls />
+      <Inventory />
     </>
   );
 };

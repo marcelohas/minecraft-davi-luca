@@ -1,9 +1,11 @@
 import { Joystick } from 'react-joystick-component';
 import { useState, useEffect } from 'react';
+import { useStore } from '../store';
 
 export const MobileControls = () => {
   const [isMobile, setIsMobile] = useState(false);
   const [isBreaking, setIsBreaking] = useState(false);
+  const toggleInventory = useStore((state) => state.toggleInventory);
 
   useEffect(() => {
     // Detectar mobile básico
@@ -104,8 +106,16 @@ export const MobileControls = () => {
         </button>
       </div>
 
+      {/* Botão do Inventário (Canto superior direito) */}
+      <div 
+        style={{ position: 'absolute', top: 20, right: 20, width: 50, height: 50, borderRadius: '10px', backgroundColor: 'rgba(50,50,50,0.8)', display: 'flex', justifyContent: 'center', alignItems: 'center', border: '2px solid white', fontSize: '24px', pointerEvents: 'auto' }}
+        onTouchStart={(e) => { e.stopPropagation(); toggleInventory(); }}
+      >
+        🎒
+      </div>
+
       {/* Instrução visual na parte superior direita */}
-      <div style={{ position: 'absolute', top: 10, right: 10, color: 'white', textShadow: '1px 1px 2px black', fontSize: 12, textAlign: 'right' }}>
+      <div style={{ position: 'absolute', top: 10, right: 80, color: 'white', textShadow: '1px 1px 2px black', fontSize: 12, textAlign: 'right' }}>
         Deslize na direita para olhar <br/>
         Toque na tela para agir
       </div>

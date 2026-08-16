@@ -81,6 +81,17 @@ export const useStore = create((set, get) => ({
   chunks: {},
   texture: 'wood',
   playerChunk: null,
+  isInventoryOpen: false,
+
+  toggleInventory: () => set((state) => {
+    // Se abrir o inventário, sair do pointer lock
+    if (!state.isInventoryOpen && document.pointerLockElement) {
+      document.exitPointerLock();
+    }
+    return { isInventoryOpen: !state.isInventoryOpen };
+  }),
+
+  closeInventory: () => set(() => ({ isInventoryOpen: false })),
 
   requestChunks: (px, pz) => {
     const cx = Math.floor(px / CHUNK_SIZE);
