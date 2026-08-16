@@ -12,36 +12,54 @@ export const MobileControls = () => {
     }
     
     // Área da direita para olhar ao redor
-    const handleTouchMove = (e) => {
-      // Pega o touch que está do lado direito da tela
-      for (let i = 0; i < e.touches.length; i++) {
-        const touch = e.touches[i];
-        if (touch.clientX > window.innerWidth / 2) {
-          if (!window.lastTouch) {
-            window.lastTouch = { x: touch.clientX, y: touch.clientY };
-          } else {
-            const dx = touch.clientX - window.lastTouch.x;
-            const dy = touch.clientY - window.lastTouch.y;
-            window.mobileLook = { x: dx, y: dy };
-            window.lastTouch = { x: touch.clientX, y: touch.clientY };
-          }
+    const handleTouchStart = (e) => {
+      for (let i = 0; i < e.changedTouches.length; i++) {
+        const touch = e.changedTouches[i];
+        // Se tocou na metade direita e ainda não temos um dedo controlando a câmera
+        if (touch.clientX > window.innerWidth / 2 && window.activeLookTouchId === undefined) {
+          window.activeLookTouchId = touch.identifier;
+          window.lastTouch = { x: touch.clientX, y: touch.clientY };
         }
       }
     };
 
-    const handleTouchEnd = () => {
-      window.lastTouch = null;
-      window.mobileLook = { x: 0, y: 0 };
+    const handleTouchMove = (e) => {
+      for (let i = 0; i < e.touches.length; i++) {
+        const touch = e.touches[i];
+        if (touch.identifier === window.activeLookTouchId) {
+          if (window.lastTouch) {
+            const dx = touch.clientX - window.lastTouch.x;
+            const dy = touch.clientY - window.lastTouch.y;
+            window.mobileLook = { x: dx, y: dy };
+          }
+          window.lastTouch = { x: touch.clientX, y: touch.clientY };
+        }
+      }
+    };
+
+    const handleTouchEnd = (e) => {
+      for (let i = 0; i < e.changedTouches.length; i++) {
+        const touch = e.changedTouches[i];
+        if (touch.identifier === window.activeLookTouchId) {
+          window.activeLookTouchId = undefined;
+          window.lastTouch = null;
+          window.mobileLook = { x: 0, y: 0 };
+        }
+      }
     };
 
     if (isMobile) {
+      document.addEventListener('touchstart', handleTouchStart);
       document.addEventListener('touchmove', handleTouchMove);
       document.addEventListener('touchend', handleTouchEnd);
+      document.addEventListener('touchcancel', handleTouchEnd);
     }
 
     return () => {
+      document.removeEventListener('touchstart', handleTouchStart);
       document.removeEventListener('touchmove', handleTouchMove);
       document.removeEventListener('touchend', handleTouchEnd);
+      document.removeEventListener('touchcancel', handleTouchEnd);
     };
   }, [isMobile]);
 
