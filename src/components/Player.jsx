@@ -4,6 +4,7 @@ import { useRef, useEffect } from 'react';
 import { Vector3, Euler } from 'three';
 import { useKeyboard } from '../hooks/useKeyboard';
 import { worldMap } from '../store';
+import { sounds } from '../utils/sounds';
 
 const SPEED = 5;
 const GRAVITY = 20;
@@ -21,6 +22,9 @@ export const Player = () => {
   const { camera } = useThree();
   const actions = useKeyboard();
   const controlsRef = useRef();
+  
+  // Timer para os passos
+  const stepTimer = useRef(0);
 
   useEffect(() => {
     camera.position.set(0, 10, 0); 
@@ -102,8 +106,20 @@ export const Player = () => {
       velocity.y = 0;
       pos.y = blockY + 0.5 + playerHeight; // Crava o pé exatamente no topo do bloco
       
+      // Som de passos ao andar no chão
+      if (direction.lengthSq() > 0.001) {
+        stepTimer.current += dt;
+        if (stepTimer.current > 0.3) {
+          sounds.step();
+          stepTimer.current = 0;
+        }
+      } else {
+        stepTimer.current = 0;
+      }
+      
       if (jump || window.mobileJump) {
          velocity.y = JUMP_FORCE;
+         sounds.jump();
          if (window.mobileJump) window.mobileJump = false; 
       }
     } else {

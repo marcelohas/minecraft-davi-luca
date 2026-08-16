@@ -2,6 +2,7 @@ import { useRef, useState, useEffect } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { Vector3, Euler } from 'three';
 import { worldMap } from '../store';
+import { sounds } from '../utils/sounds';
 
 const clean = (n) => (n === 0 ? 0 : n);
 const hasBlock = (x, y, z) => {
@@ -87,6 +88,12 @@ export const Animal = ({ type, position }) => {
         state.current.action = 'walking';
         state.current.targetRotation = Math.random() * Math.PI * 2;
         state.current.timer = 1 + Math.random() * 3;
+        
+        // Tocar som aleatoriamente quando mudar de direção
+        if (Math.random() < 0.3) {
+          if (type === 'pig') sounds.pig();
+          else sounds.cow();
+        }
       } else {
         state.current.action = 'idle';
         state.current.timer = 2 + Math.random() * 5;

@@ -1,5 +1,6 @@
 import { useRef, useMemo, useEffect, useState } from 'react';
 import { useStore } from '../store';
+import { sounds } from '../utils/sounds';
 import { Object3D, BoxGeometry } from 'three';
 import { textures } from '../images/textures';
 import { Animal } from './Animal';
@@ -37,7 +38,8 @@ export const World = () => {
     const [x, y, z] = pos;
     
     if (e.altKey || e.button === 2 || window.isMobileBreaking) {
-      if (y > -4) removeCube(x, y, z);
+      removeCube(x, y, z);
+      sounds.break();
       setHoveredPos(null);
       return;
     }
@@ -48,6 +50,7 @@ export const World = () => {
     else if (clickedFace === 3) addCube(x, y - 1, z, activeTexture);
     else if (clickedFace === 4) addCube(x, y, z + 1, activeTexture);
     else if (clickedFace === 5) addCube(x, y, z - 1, activeTexture);
+    sounds.place();
   };
 
   const handlePointerMove = (e, textureName) => {
@@ -94,6 +97,11 @@ const InstancedCubes = ({ textureName, blocks, onClick, onMove }) => {
   const meshRef = useRef();
 
   useEffect(() => {
+    // Inicializar áudio no primeiro clique/toque
+    const handleInit = () => sounds.init();
+    window.addEventListener('click', handleInit, { once: true });
+    window.addEventListener('touchstart', handleInit, { once: true });
+
     if (meshRef.current) {
       blocks.forEach((block, i) => {
         o.position.set(...block.pos);
